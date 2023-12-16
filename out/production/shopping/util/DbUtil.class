@@ -1,0 +1,63 @@
+//
+// Source code recreated from a .class file by IntelliJ IDEA
+// (powered by FernFlower decompiler)
+//
+
+package util;
+
+import java.sql.Connection;
+import java.sql.DriverManager;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.sql.Statement;
+
+public class DbUtil {
+    static String url = "jdbc:mysql://127.0.0.1:3306/shopping?characterEncoding=utf-8&useSSL=false&serverTimezone=Asia/Shanghai";
+    static String user = "root";
+    static String pwd = "*HeMin5201314*";
+    static String driver = "com.mysql.cj.jdbc.Driver";
+
+    public DbUtil() {
+    }
+
+    public static Connection getCon() {
+        try {
+            return DriverManager.getConnection(url, user, pwd);
+        } catch (SQLException var1) {
+            var1.printStackTrace();
+            return null;
+        }
+    }
+
+    public static void close(Connection connection, Statement statement, ResultSet resultSet) {
+        try {
+            if (null != resultSet) {
+                resultSet.close();
+            }
+
+            if (null != statement) {
+                statement.close();
+            }
+
+            if (null != connection) {
+                connection.close();
+            }
+        } catch (Exception var4) {
+            var4.printStackTrace();
+        }
+
+    }
+
+    public static void close(Connection connection, Statement statement) {
+        close(connection, statement, (ResultSet)null);
+    }
+
+    static {
+        try {
+            Class.forName(driver);
+        } catch (ClassNotFoundException var1) {
+            var1.printStackTrace();
+        }
+
+    }
+}
