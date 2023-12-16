@@ -1,0 +1,57 @@
+//
+// Source code recreated from a .class file by IntelliJ IDEA
+// (powered by FernFlower decompiler)
+//
+
+package order;
+
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.util.Date;
+import util.DbUtil;
+
+public class OrderAdd {
+    public OrderAdd() {
+    }
+
+    public static void main(String[] args) {
+        Connection conn = null;
+        PreparedStatement pstmt = null;
+        ResultSet rs = null;
+        String sql = "insert into `order`(id,code,pcode,price,ctime) values (? ,? ,? ,? ,? )";
+        String sql1 = "select title from goods where code = ?";
+        String code = String.valueOf((new Date()).getTime());
+        String pcode = "10003";
+        String price = "1";
+
+        try {
+            conn = DbUtil.getCon();
+            pstmt = conn.prepareStatement(sql1);
+            pstmt.setObject(1, pcode);
+            rs = pstmt.executeQuery();
+
+            String title1;
+            for(title1 = ""; rs.next(); title1 = rs.getString("title")) {
+            }
+
+            if ("".equals(title1)) {
+                System.out.println("商品编码不存在，下单失败！");
+            } else {
+                pstmt = conn.prepareStatement(sql);
+                pstmt.setObject(1, (Object)null);
+                pstmt.setObject(2, code);
+                pstmt.setObject(3, pcode);
+                pstmt.setObject(4, price);
+                pstmt.setObject(5, new Date());
+                int i = pstmt.executeUpdate();
+                System.out.println(i > 0 ? "下单成功" : "下单失败");
+            }
+        } catch (Exception var14) {
+            var14.printStackTrace();
+        } finally {
+            DbUtil.close(conn, pstmt);
+        }
+
+    }
+}
