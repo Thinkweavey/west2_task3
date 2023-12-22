@@ -243,3 +243,124 @@ SELECT DATE_SUB(NOW(),INTERVAL 1 DAY);
 SELECT DATE_SUB(NOW(),INTERVAL 1 MONTH);
 SELECT DATEDIFF('2019-07-22','2019-05-05');
 ```
+### 2.2、字符串函数
+```--连接函数
+SELECT CONCAT ()
+--
+SELECT INSTR ();
+--统计长度
+SELECT LENGTH();
+```
+### 2.3、数学函数
+```-- 绝对值
+SELECT ABS(-136);
+-- 向下取整
+SELECT FLOOR(3.14);
+-- 向上取整
+SELECT CEILING(3.14);
+```
+# 十一、条件查询
+
+## 1.使用关系运算符查询
+关系运算符  |   说明 
+----  |   ----  
+=|	等于
+<>|	不等于
+!=	|不等于
+<	|小于
+<=	|小于等于
+>	|大于
+>=	|大于等于
+## 2.使用IN关键字查询
+
+查询sid为S_1002和S_1003的学生信息 MySQL命令：
+`select * from student where sid in ('S_1002','S_1003');`
+查询sid为S_1001以外的学生的信息 MySQL命令：
+`select * from student where sid not in ('S_1001');`
+
+## 3.使用BETWEEN AND关键字查询
+
+## 4.使用空值查询
+
+## 5.使用AND关键字查询
+在MySQL中可使用AND关键字可以连接两个或者多个查询条件。
+## 6.使用OR关键字查询
+`select * from student where age>15 or gender='male';`
+## 7.使用LIKE关键字查询
+MySQL中可使用LIKE关键字可以判断两个字符串是否相匹配
+### 7.1 普通字符串
+`select * from student where sname like 'wang';`
+### 7.2 含有%通配的字符串
+%用于匹配任意长度的字符串。例如，字符串“a%”匹配以字符a开始任意长度的字符串
+`select * from student where sname like 'li%';`
+### 7.3 含有_通配的字符串
+下划线通配符只匹配单个字符，如果要匹配多个字符，需要连续使用多个下划线通配符。例如，字符串“ab_”匹配以字符串“ab”开始长度为3的字符串，如abc、abp等等；字符串“a__d”匹配在字符“a”和“d”之间包含两个字符的字符串，如"abcd"、"atud"等等。
+
+## 8.使用LIMIT限制查询结果的数量
+当执行查询数据时可能会返回很多条记录，而用户需要的数据可能只是其中的一条或者几条
+查询学生表中年纪最小的3位同学 MySQL命令：
+`select * from student order by age asc limit 3;`
+
+
+## 9.使用GROUP BY进行分组查询
+通过GROUP BY将原来的表拆分成了几张小表。
+### 9.1 GROUP BY和聚合函数一起使用
+统计各部门员工个数 MySQL命令：
+`select count(*), departmentnumber from employee group by departmentnumber;`
+### 9.2 GROUP BY和聚合函数以及HAVING一起使用
+`select sum(salary),departmentnumber from employee group by departmentnumber having sum(salary)>8000;`
+
+## 10.使用ORDER BY对查询结果排序
+
+```SELECT 字段名1,字段名2,…
+FROM 表名
+ORDER BY 字段名1 [ASC 丨 DESC],字段名2 [ASC | DESC];
+```
+
+# 十二、别名设置
+
+```SELECT * FROM 表名 [AS] 表的别名 WHERE .... ;
+
+SELECT 字段名1 [AS] 别名1 , 字段名2 [AS] 别名2 , ... FROM 表名 WHERE ... ;
+```
+
+
+# 十三、表的关联关系
+
+***多对一***
+多对一(亦称为一对多)是数据表中最常见的一种关系。例如：员工与部门之间的关系，一个部门可以有多个员工；而一个员工不能属于多个部门只属于某个部门。在多对一的表关系 中，应将外键建在多的一方否则会造成数据的冗余。
+***多对多***
+多对多是数据表中常见的一种关系。例如：学生与老师之间的关系，一个学生可以有多个老师而且一个老师有多个学生。通常情况下，为了实现这种关系需要定义一张中间表(亦称为连接表)该表会存在两个外键分别参照老师表和学生表。
+***一对一***
+在开发过程中，一对一的关联关系在数据库中并不常见；因为以这种方式存储的信息通常会放在同一张表中。
+## 1.关联查询
+`select * from student where classid=(select cid from class where cname='Java');`
+
+## 2.关于关联关系的删除数据
+请从班级表中删除Java班级。在此，请注意：班级表和学生表之间存在关联关系；要删除Java班级，应该先删除学生表中与该班相关联的学生。否则，假若先删除Java班那么学生表中的cid就失去了关联
+删除Java班 MySQL命令：
+```delete from student where classid=(select cid from class where cname='Java');
+delete from class where cname='Java';
+```
+
+# 十四、多表连接查询
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
