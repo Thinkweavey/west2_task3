@@ -101,4 +101,145 @@ MEDIUMBLOB	|0~16777215字节
 LONGBLOB	|0~4294967295字节
 
 # 四、数据库、数据表的基本操作
-## `create database 数据库名称;`
+## 1.数据库的基本操作
+创建一个叫db1的数据库MySQL命令：
+ `create database 数据库名称;`
+删除数据库MySQL命令：
+`drop database db1;`
+查询出MySQL中所有的数据库MySQL命令：
+`show databases;`
+将数据库的字符集修改为gbk MySQL命令：
+`alter database db1 character set gbk;`
+切换数据库 MySQL命令：
+`use db1;`
+查看当前使用的数据库 MySQL命令：
+`select database();`
+## 2.数据表的基本操作
+数据库创建成功后可在该数据库中创建数据表(简称为表)存储数据。请注意：在操作数据表之前应使用“USE 数据库名;”指定操作是在哪个数据库中进行先关操作，否则会抛出“No database selected”错误。
+### 2.1 创建数据表
+` create table 表名(
+         字段1 字段类型,
+         字段2 字段类型,
+         …
+         字段n 字段类型
+);
+`
+### 2.2 查看数据表
+查看当前数据库中所有表 MySQL命令：
+`show tables;`
+查表的基本信息 MySQL命令：
+`show create table student;`
+查看表的字段信息 MySQL命令：
+`desc student;`
+
+### 2.3 修改数据表
+修改表名 MySQL命令：
+`alter table student rename to stu;`
+修改字段名 MySQL命令：
+`alter table stu change name sname varchar(10);`
+修改字段数据类型 MySQL命令：
+`alter table stu modify sname int;`
+增加字段 MySQL命令：
+`alter table stu add address varchar(50);`
+删除字段 MySQL命令：
+`alter table stu drop address;`
+
+### 2.4 删除数据表
+`drop table 表名;`
+
+
+# 五、数据表的约束
+约束条件  |  说明 
+----  |   ---- 
+PRIMARY KEY	|主键约束用于唯一标识对应的记录
+FOREIGN KEY|	外键约束
+NOT NULL	|非空约束
+UNIQUE|	唯一性约束
+DEFAULT|	默认值约束，用于设置字段的默认值
+以上五种约束条件针对表中字段进行限制从而保证数据表中数据的正确性和唯一性。换句话说，表的约束实际上就是表中数据的限制条件。|	
+
+
+# 六、数据表插入数据
+
+## 1. 为表中所有字段插入数据
+`INSERT INTO 表名（字段名1,字段名2,...) VALUES (值 1,值 2,...);`
+## 2. 为表中指定字段插入数据
+`INSERT INTO 表名（字段名1,字段名2,...) VALUES (值 1,值 2,...);`
+## 3. 同时插入多条记录
+`INSERT INTO 表名 [(字段名1,字段名2,...)]VALUES (值 1,值 2,…),(值 1,值 2,…),...;`
+
+# 七、更新数据
+
+## 1. UPDATE基本语法
+`UPDATE 表名 SET 字段名1=值1[,字段名2 =值2,…] [WHERE 条件表达式];`
+## 2. UPDATE更新部分数据
+`update student set age=20,gender='female' where name='tom';`
+## 3. UPDATE更新全部数据
+`update student set age=18;`
+
+# 八、删除数据
+## 1. DELETE基本语法
+`DELETE FROM 表名 [WHERE 条件表达式];`
+## 2. DELETE删除部分数据
+`delete from student where age=14;`
+## 3. DELETE删除全部数据
+`delete from student;`
+
+## 4. TRUNCATE和DETELE的区别
+TRUNCATE和DETELE都能实现删除表中的所有数据的功能，但两者也是有区别的：
+1、DELETE语句后可跟WHERE子句，可通过指定WHERE子句中的条件表达式只删除满足条件的部分记录；但是，TRUNCATE语句只能用于删除表中的所有记录。
+2、使用TRUNCATE语句删除表中的数据后，再次向表中添加记录时自动增加字段的默认初始值重新由1开始；使用DELETE语句删除表中所有记录后，再次向表中添加记录时自动增加字段的值为删除时该字段的最大值加1
+3、DELETE语句是DML语句，TRUNCATE语句通常被认为是DDL语句
+
+
+# 九、MySQL数据表简单查询
+## 1.简单查询概述
+简单查询即不含where的select语句。
+## 2.查询所有字段（方法不唯一只是举例）
+`select * from student;`
+## 3.查询指定字段（sid、sname）
+`select sid,sname from student;`
+## 4.常数的查询
+`select sid,sname,'2021-03-02' from student;`
+## 5.从查询结果中过滤重复数据
+**在SELECT查询语句中DISTINCT关键字只能用在第一个所查列名之前。**
+`select distinct gender from student;`
+
+## 6.算术运算符（举例加运算符）
+查询学生10年后的年龄 MySQL命令：
+`select sname,age+10 from student;`
+
+# 十、函数
+## 1.聚合函数
+
+**聚合函数使用规则：**
+只有SELECT子句和HAVING子句、ORDER BY子句中能够使用聚合函数。例如，在WHERE子句中使用聚合函数是错误的。
+### 1.1、count（）
+统计表中数据的行数或者统计指定列其值不为NULL的数据个数
+查询有多少该表中有多少人
+`select count(*) from student;`
+### 1.2、max（）
+计算指定列的最大值，如果指定列是字符串类型则使用字符串排序运算
+查询该学生表中年纪最大的学生
+`select max(age) from student;`
+### 1.3、min（）
+### 1.4、sum（）
+### 1.5、avg（）
+---
+### 2.1、时间函数
+```SELECT NOW();
+SELECT DAY (NOW());
+SELECT DATE (NOW());
+SELECT TIME (NOW());
+SELECT YEAR (NOW());
+SELECT MONTH (NOW());
+SELECT CURRENT_DATE();
+SELECT CURRENT_TIME();
+SELECT CURRENT_TIMESTAMP();
+SELECT ADDTIME('14:23:12','01:02:01');
+SELECT DATE_ADD(NOW(),INTERVAL 1 DAY);
+SELECT DATE_ADD(NOW(),INTERVAL 1 MONTH);
+SELECT DATE_SUB(NOW(),INTERVAL 1 DAY);
+SELECT DATE_SUB(NOW(),INTERVAL 1 MONTH);
+SELECT DATEDIFF('2019-07-22','2019-05-05');
+```
