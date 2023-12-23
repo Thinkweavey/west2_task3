@@ -431,6 +431,217 @@ public class JDBC_transaction {
     }
 }
 ```
+*** 细节说明：***
+如果中间有异常发生，则事务发生回滚
+![img](https://img-blog.csdnimg.cn/9b217e2b1b774d7f896272c6734053d4.png)
+---
+# 连接池DBCP和C3P0
+## jar包的配置
+编写连接池本质只需要实现一个接口 DataSource，无论什么数据源，DataSource接口不会变，方法就不会变。
+
+说明一下：.zip是windows系统下载的，tar.gz是linux系统下载的，.bin是二进制class文件，.source是源码文件，一般下载.bin就可以了，除非你是要研究源码，我这4个jar包都是下载的.bin文件
+
+DBCP用到的jar包：
+
+(1)commons-dbcp-1.4
+
+下载链接：Index of /dist/commons/dbcp/source
+
+(2)commons-pool-1.6
+
+下载链接：Index of /dist/commons/pool
+
+C3P0用到的jar包：
+
+(1)C3P0-0.9.5.5.jar
+
+下载连接：Download c3p0-0.9.5.5.bin.zip (c3p0:JDBC DataSources/Resource Pools)
+
+(2)mchange-commons-pool-java-0.2.19
+
+下载连接：https://mvnrepository.com/artifact/com.mchange/mchange-commons-java/0.2.19
+### (1)连接池DBCP
+在最开始的时候，我们有编写一个工具类（JdbcUtils.java）和一个配置文件(db.properties)来完成增删改查操作
+
+通过连接池来完成增删改查操作也是一样的道理，我们要编写一个工具类（DBCPUtils.java）和一个配置文件(dbcpconfig.properties)来完成增删改查操作
+
+首先工具类DBCPUtils.java
+
+需要关注的点：1.通过工厂模式创建数据源datasource；2.通过数据源里自带的连接来获取连接
+```package jdbcFirstDemo.src.lesson05.utils;
+ 
+import org.apache.commons.dbcp.BasicDataSourceFactory;
+import javax.sql.DataSource;
+import java.io.IOException;
+import java.io.InputStream;
+import java.sql.*;
+import java.util.Properties;
+public class DBCPUtils {
+    private static DataSource datasource = null;
+    static {
+        try {
+            InputStream in = DBCPUtils.class.getClassLoader().getResourceAsStream("dbcpconfig.properties");
+            Properties properties = new Properties();
+            properties.load(in);
+            //创建数据源，  工厂模式
+            datasource = BasicDataSourceFactory.createDataSource(properties);
+ 
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+    }
+    //获取连接
+    public static Connection getConnection() throws SQLException {
+        //数据源里自带连接
+        return datasource.getConnection();
+    }
+ 
+    //释放连接资源
+    public static void release(Connection conn, Statement st, ResultSet rs) {
+        if (rs != null) {
+            try {
+                rs.close();
+            } catch (SQLException e) {
+                throw new RuntimeException(e);
+            }
+        }
+ 
+        if (st != null) {
+            try {
+                st.close();
+            } catch (SQLException e) {
+                throw new RuntimeException(e);
+            }
+        }
+        if (conn != null) {
+            try {
+                conn.close();
+            } catch (SQLException e) {
+                throw new RuntimeException(e);
+            }
+        }
+ 
+    }
+}
+```
+其次配置文件(dbcpconfig.properties)
+
+这个配置文件可以去apache官网下载也可以自己写，代码不多
+```driverClassName=com.mysql.jdbc.Driver
+url=jdbc:mysql://localhost:3306/jdbcstudy?useUnicode=true&characterEncoding=utf8&useSSL=true
+username=root
+password=lcl403020
+initialSize=10
+maxActive=50
+ 
+maxIdle=20
+minIdle=5
+#最长等待时间为60s
+maxWait=60000
+connectionProperties=useUnicode=true;characterEncoding=UTF8
+defaultAutoCommit=true
+defaultReadOnly=
+defaultTransactionIsolation=READ_UNCOMMITTED
+```
+最后测试TestDBCP_Insert.java
+```package jdbcFirstDemo.src.lesson05;
+ 
+import jdbcFirstDemo.src.lesson05.utils.DBCPUtils;
+ 
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.SQLException;
+import java.util.Date;
+public class TestDBCP_Insert {
+    public static void main(String[] args) throws SQLException {
+        Connection conn=null;
+        PreparedStatement st=null;
+        conn= DBCPUtils.getConnection();
+        //PreparedStatement 和Statement 区别
+        String sql="insert into users(id, name, password, email, birthday) VALUES (?,?,?,?,?)";
+        st=conn.prepareStatement(sql);
+        //手动给参数赋值
+        st.setInt(1,8);
+        st.setString(2,"wwn");
+        st.setString(3,"6421");
+        st.setString(4,"3ffa23@");
+        //注意点：sql.data  数据库
+        //    这里要用这个！！！util.data   java
+        st.setDate(5,new java.sql.Date(new Date().getTime()));
+        //执行
+        int i=st.executeUpdate();
+        if(i>0) {
+            System.out.println("插入成功");
+        }
+        DBCPUtils.release(conn,st,null);
+ 
+    }
+ 
+}
+```
+### (2)连接池C3P0
+同理DBCP连接池，C3P0也需要工具类（C3P0Utils.java），配置文件（C3P0-config.xml）
+
+首先配置文件C3P0-config.xml
+
+注意：在DBCP连接池中用的匹配文件是dbcpconfig.properties，而在C3P0中的配置文件是C3P0-config.xml，下面的配置文件给出了默认配置和c3p0命名配置，正常来说工具类会根据有没有传递进来参数“c3p0”来匹配哪个配置的，但是我如果按下面的xml文件去跑我的TestC3P0_insert.java是会报错的
+```<?xml version="1.0" encoding="UTF-8"?>
+ 
+<c3p0-config>
+    <!--
+    c3p0的缺省（默认）配置
+    如果在代码中"ComboPooledDataSource ds=new ComboPooledDataSource();"这样写就表示使用的是c3p0的缺省（默认）
+    -->
+    <default-config>
+    <named-config name="c3p0">
+        <property name="driverClass">com.mysql.jdbc.Driver</property>
+        <property name="jdbcUrl">jdbc:mysql://localhost:3306/jdbcstudy?useUnicode=true&amp;characterEncoding=utf8&amp;useSSL=true</property>
+        <property name="user">root</property>
+        <property name="password">lcl403020</property>
+ 
+        <property name="acquiredIncrement">5</property>
+        <property name="initialPoolSize">10</property>
+        <property name="minPoolSize">5</property>
+        <property name="maxPoolSize">20</property>
+    </named-config>
+    </default-config>
+    <!--
+          c3p0的命名配置
+        如果在代码中"ComboPooledDataSource ds=new ComboPooledDataSource("MySQL");"这样写就表示使用的是mysql的缺省（默认）-->
+    <named-config name="MySQL">
+        <property name="driverClass">com.mysql.cj.jdbc.Driver</property>
+        <property name="jdbcUrl">jdbc:mysql://localhost:3306/jdbcstudy?userUnicode=true&amp;characterEncoding=utf8&amp;uesSSL=true&amp;serverTimezone=UTC</property>
+        <property name="user">root</property>
+        <property name="password">123456</property>
+ 
+        <property name="acquiredIncrement">5</property>
+        <property name="initialPoolSize">10</property>
+        <property name="minPoolSize">5</property>
+        <property name="maxPoolSize">20</property>
+    </named-config>
+</c3p0-config>
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
