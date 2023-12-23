@@ -90,17 +90,347 @@ properties文件 是java支持的一种配置文件类型(所谓支持是因为J
 ```driver=com.mysql.jdbc.Driver
 url=jdbc:mysql://localhost:3306/jdbcstudy?useUnicode=true&characterEncoding=utf8&useSSL=true
 username=root
-password=lcl403020```
+password=lcl403020
+```
+## (2)建立工具类JdbcUtils.java 
+有了这个工具类，之后的增删改查操作可直接导入这个工具类完成获取连接，释放资源的操作，很方便，接着往下看。
+```package jdbcFirstDemo.src.lesson02.utils;
+import java.io.IOException;
+import java.io.InputStream;
+import java.sql.*;
+import java.util.Properties;
+public class JdbcUtils {
+    private static String driver=null;
+    private static String url=null;
+    private static String username=null;
+    private static String password=null;
+    static  {
+        try{
+            InputStream in=JdbcUtils.class.getClassLoader().getResourceAsStream("db.properties");
+            Properties properties=new Properties();
+            properties.load(in);
+ 
+            driver=properties.getProperty("driver");
+            url=properties.getProperty("url");
+            username=properties.getProperty("username");
+            password=properties.getProperty("password");
+            //驱动只需要加载一次
+            Class.forName(driver);
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        } catch (ClassNotFoundException e) {
+            throw new RuntimeException(e);
+        }
+    }
+    //获取连接
+    public static Connection getConnection() throws SQLException {
+        return DriverManager.getConnection(url,username,password);
+    }
+    //释放连接资源
+    public static void release(Connection conn, Statement st, ResultSet rs)  {
+        if(rs!=null){
+            try{
+                rs.close();
+            } catch (SQLException e) {
+                throw new RuntimeException(e);
+            }
+        }
+ 
+        if(st!=null){
+            try {
+                st.close();
+            } catch (SQLException e) {
+                throw new RuntimeException(e);
+            }
+        }
+        if(conn!=null){
+            try {
+                conn.close();
+            } catch (SQLException e) {
+                throw new RuntimeException(e);
+            }
+        }
+ 
+    }
+}
+```
+## (3)插入数据（DML）
+```package jdbcFirstDemo.src.lesson02;
+import jdbcFirstDemo.src.lesson02.utils.JdbcUtils;
+import java.sql.Connection;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.sql.Statement;
+public class TestInsert {
+    public static void main(String[] args) {
+        Connection conn=null;
+        Statement st=null;
+        ResultSet rs=null;
+        try{
+            conn= JdbcUtils.getConnection();
+            st=conn.createStatement();
+            String sql="insert into users  (id, name, password, email, birthday) VALUES (7,'cll',406020,'30812290','2002-03-03 10:00:00')";
+            int i=st.executeUpdate(sql);
+            if(i>0){
+                System.out.println("插入成功！");
+            }
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        }
+        finally {
+            JdbcUtils.release(conn,st,rs);
+        }
+    }
+}
+```
+## (4)修改数据（DML）
+```package jdbcFirstDemo.src.lesson02;
+import jdbcFirstDemo.src.lesson02.utils.JdbcUtils;
+import java.sql.Connection;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.sql.Statement;
+public class TestUpdate {
+    public static void main(String[] args) {
+        Connection conn=null;
+        Statement st=null;
+        ResultSet rs=null;
+        try{
+            conn= JdbcUtils.getConnection();
+            st=conn.createStatement();
+            String sql="update users set name='haha' where id=2";
+            int i=st.executeUpdate(sql);
+            if(i>0){
+                System.out.println("修改成功！");
+            }
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        }
+        finally {
+            JdbcUtils.release(conn,st,rs);
+        }
+    }
+}
+```
 
+## (5)删除数据（DML）
+```package jdbcFirstDemo.src.lesson02;
+import jdbcFirstDemo.src.lesson02.utils.JdbcUtils;
+import java.sql.Connection;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.sql.Statement;
+public class TestDelete {
+    public static void main(String[] args) {
+        Connection conn=null;
+        Statement st=null;
+        ResultSet rs=null;
+        try{
+            conn= JdbcUtils.getConnection();
+            st=conn.createStatement();
+            String sql="delete from users where id=1";
+            int i=st.executeUpdate(sql);
+            if(i>0){
+                System.out.println("删除成功！");
+            }
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        }
+        finally {
+            JdbcUtils.release(conn,st,rs);
+        }
+    }
+}
+```
 
+## (6)查询数据(DQL)
+```package jdbcFirstDemo.src.lesson02;
+import jdbcFirstDemo.src.lesson02.utils.JdbcUtils;
+import java.sql.Connection;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.sql.Statement;
+public class TestQuery {
+    public static void main(String[] args) throws SQLException {
+        Connection conn=null;
+        Statement st=null;
+        ResultSet rs=null;
+        conn= JdbcUtils.getConnection();
+        st=conn.createStatement();
+        //sql
+        String sql="select * from users";
+        rs=st.executeQuery(sql);
+        while (rs.next()){
+            System.out.println(rs.getString("name"));
+        }
+    }
+}
+```
+---
+# SQL注入问题
+几乎所有关系型数据库都会存在sql注入问题（可以自行百度），sql注入问题是很重要的安全性问题，简单而言就是可以通过拼接sql语句。使得sql语句逻辑结果为true，从而欺骗服务器获得想要的信息。
+# 解决SQL注入问题PreparedStatement
+PreparedStatement对象比statement对象能防止sql注入问题更安全且效率更高，我们先不急着展示如何解决sql注入，我们先简单来看PreparedStatement对象和Statement对象在操作数据库上的区别
+(1)插入数据（DML）
+与前面statement对象插入数据不同的是：1.这里的sql用了？占位符代替；2.创建方式不同，这里是conn.prepareStatement（sql）3.插入方式不同，这里是对每个参数直接设置，如st.setInt()
 
-
-
-
-
-
-
-
+```package jdbcFirstDemo.src.lesson03;
+import jdbcFirstDemo.src.lesson02.utils.JdbcUtils;
+import java.sql.Connection;
+import java.util.Date;
+import java.sql.PreparedStatement;
+import java.sql.SQLException;
+ 
+public class TestInsert {
+    public static void main(String[] args) throws SQLException {
+        Connection conn=null;
+        PreparedStatement st=null;
+        conn= JdbcUtils.getConnection();
+        //PreparedStatement 和Statement 区别
+        String sql="insert into users(id, name, password, email, birthday) VALUES (?,?,?,?,?)";
+        st=conn.prepareStatement(sql);
+        //手动给参数赋值
+        st.setInt(1,6);
+        st.setString(2,"qin");
+        st.setString(3,"222");
+        st.setString(4,"393003@");
+ 
+        //注意点：sql.data  数据库
+        //    这里要用这个！！！util.data   java
+        st.setDate(5,new java.sql.Date(new Date().getTime()));
+        //执行
+        int i=st.executeUpdate();
+        if(i>0) {
+            System.out.println("插入成功");
+ 
+        }
+        JdbcUtils.release(conn,st,null);
+ 
+    }
+}
+```
+(2)删除数据（DML）
+```package jdbcFirstDemo.src.lesson03;
+import jdbcFirstDemo.src.lesson02.utils.JdbcUtils;
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.SQLException;
+import java.util.Date;
+public class TestDelete {
+    public static void main(String[] args) throws SQLException {
+        //建立连接-预编译-
+        Connection conn=null;
+        PreparedStatement st=null;
+        conn= JdbcUtils.getConnection();
+        //PreparedStatement 和Statement 区别
+        String sql="delete from users where id=2;";
+        st=conn.prepareStatement(sql);
+ 
+        //执行
+        int i=st.executeUpdate();
+        if(i>0) {
+            System.out.println("删除成功！！");
+ 
+        }
+        JdbcUtils.release(conn,st,null);
+ 
+    }
+}
+```
+(3)修改数据（DML）
+```package jdbcFirstDemo.src.lesson02;
+import jdbcFirstDemo.src.lesson02.utils.JdbcUtils;
+import java.sql.Connection;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.sql.Statement;
+public class TestUpdate {
+    public static void main(String[] args) {
+        Connection conn=null;
+        Statement st=null;
+        ResultSet rs=null;
+        try{
+            conn= JdbcUtils.getConnection();
+            st=conn.createStatement();
+            String sql="update users set name='haha' where id=4";
+            int i=st.executeUpdate(sql);
+            if(i>0){
+                System.out.println("修改成功！");
+            }
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        }
+        finally {
+            JdbcUtils.release(conn,st,rs);
+        }
+    }
+}
+```
+(4)查询数据（DML）
+```package jdbcFirstDemo.src.lesson03;
+ 
+import jdbcFirstDemo.src.lesson02.utils.JdbcUtils;
+ 
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+ 
+public class TestQuery {
+    public static void main(String[] args) throws SQLException {
+        Connection conn=null;
+        PreparedStatement st=null;
+        ResultSet rs=null;
+        conn= JdbcUtils.getConnection();
+        String sql="select *from users where id=?";
+        st=conn.prepareStatement(sql);
+        st.setInt(1,7);//(第几个参数，参数值为多少)
+        rs=st.executeQuery();
+        if(rs.next()){
+            System.out.println(rs.getString("name"));
+        }
+        JdbcUtils.release(conn,st,rs);
+    }
+ 
+}
+```
+---
+# JDBC操作事务
+操作的表
+![img](https://img-blog.csdnimg.cn/0e0d36390582410083afd75612aa55e1.png)
+ 代码：
+ ```package jdbcFirstDemo.src.lesson04;
+import jdbcFirstDemo.src.lesson02.utils.JdbcUtils;
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+public class JDBC_transaction {
+    public static void main(String[] args) {
+        Connection conn=null;
+        PreparedStatement st=null;
+        ResultSet rs=null;
+        try {
+            conn = JdbcUtils.getConnection();
+            conn.setAutoCommit(false);//开启事务同时关闭自动提交按钮
+            String sql1 = "update account set money=money-1000 where name='张三'";
+            st = conn.prepareStatement(sql1);
+            st.executeUpdate();
+         //   int x=1/0;
+            String sql2 = "update account set money=money+1000 where name='李四'";
+            st = conn.prepareStatement(sql2);
+            st.executeUpdate();
+            //事务结束，提交
+            conn.commit();
+            System.out.println("事务执行成功！！");
+        }catch (SQLException  e){
+            try{conn.rollback();}
+            catch (SQLException e1){e1.printStackTrace();}
+        }
+ 
+    }
+}
+```
 
 
 
